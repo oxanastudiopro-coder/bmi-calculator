@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ИМТ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400&display=swap');
+
+:root {
+  --bg:      #0e0e0e;
+  --surface: #161616;
+  --line:    #222;
+  --muted:   #444;
+  --dim:     #888;
+  --text:    #f0f0f0;
+  --danger:  #ff5f5f;
+  --c-under: #60b4f0;
+  --c-norm:  #c8f060;
+  --c-over:  #f0a060;
+  --c-obese: #ff5f5f;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.header {
+  padding: 2rem 2rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.header-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+.header-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* gender + age section */
+.params-wrap { padding: 1.5rem 2rem 0; display: flex; flex-direction: column; gap: 1rem; }
+
+.param-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+/* gender toggle */
+.gender-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.gender-btn {
+  padding: 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--dim);
+  transition: background 0.2s, color 0.2s;
+}
+.gender-btn:first-child { border-right: 1px solid var(--line); }
+.gender-btn.on-m { background: #0d1e30; color: #60b4f0; }
+.gender-btn.on-f { background: #20102a; color: #d4a0f0; }
+
+/* age group pills */
+.age-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.age-pill {
+  padding: 6px 13px;
+  border-radius: 99px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--dim);
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.age-pill:hover { border-color: var(--muted); color: var(--text); }
+.age-pill.active { background: #1a1a2e; color: #a89cf0; border-color: #4a3fa0; }
+
+/* fields */
+.fields { padding: 1.5rem 2rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+}
+.field-unit { color: var(--muted); }
+.field-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 36px;
+  font-weight: 300;
+  padding: 6px 0 10px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+  -moz-appearance: textfield;
+}
+.field-input::-webkit-inner-spin-button,
+.field-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.field-input::placeholder { color: var(--muted); }
+.field-input:focus { border-color: var(--c-norm); }
+.field-input.error { border-color: var(--danger); }
+
+.err-msg {
+  padding: 0 2rem 1rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--danger);
+  letter-spacing: 0.06em;
+  display: none;
+}
+.err-msg.show { display: block; }
+
+.btn-wrap { padding: 0 2rem 2rem; }
+.btn {
+  width: 100%;
+  background: var(--c-norm);
+  color: #0e0e0e;
+  border: none;
+  border-radius: 2px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.15s, transform 0.1s;
+  position: relative;
+  overflow: hidden;
+}
+.btn:hover { opacity: 0.88; }
+.btn:active { transform: scale(0.985); }
+.btn::after { content: ''; position: absolute; inset: 0; background: #fff; opacity: 0; }
+.btn.flash::after { animation: flash 0.35s ease-out forwards; }
+@keyframes flash { 0%{opacity:0.2} 100%{opacity:0} }
+
+/* result */
+.result {
+  border-top: 1px solid var(--line);
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.55s cubic-bezier(0.4,0,0.2,1), opacity 0.4s;
+}
+.result.show { max-height: 700px; opacity: 1; }
+.result-inner { padding: 1.75rem 2rem 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
+
+/* context badge */
+.context-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 99px;
+  background: #1a1a2e;
+  border: 1px solid #4a3fa0;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #a89cf0;
+  align-self: flex-start;
+}
+
+/* bmi number */
+.bmi-row { display: flex; flex-direction: column; gap: 5px; }
+.bmi-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+.bmi-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 72px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -2px;
+  transition: color 0.4s;
+}
+.bmi-category {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 4px;
+  transition: color 0.4s;
+}
+.bmi-note {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+  margin-top: 1px;
+}
+
+/* scale */
+.scale { display: flex; flex-direction: column; gap: 8px; }
+.scale-bar {
+  height: 4px;
+  background: var(--line);
+  border-radius: 99px;
+  position: relative;
+  overflow: visible;
+}
+.scale-bar-fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  border-radius: 99px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1), background 0.4s;
+}
+.scale-marker {
+  position: absolute; top: -4px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  transform: translateX(-50%);
+  transition: left 0.5s cubic-bezier(0.4,0,0.2,1), background 0.4s;
+}
+.scale-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  padding: 0 2px;
+}
+
+/* stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.stat-cell {
+  background: #111;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.stat-cell-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+.stat-cell-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 17px;
+  font-weight: 300;
+  transition: color 0.4s;
+}
+.stat-cell-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.divider { width: 24px; height: 1px; background: var(--line); }
+
+/* ranges */
+.ranges { display: flex; flex-direction: column; gap: 6px; }
+.range-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 3px 0;
+}
+.range-dot { width: 6px; height: 6px; border-radius: 50%; margin-right: 8px; flex-shrink: 0; }
+.range-left { display: flex; align-items: center; }
+.range-val { color: var(--dim); font-size: 10px; text-align: right; }
+.range-row.active .range-left { color: var(--text); }
+.range-row.active .range-val { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <span class="header-title">Калькулятор ИМТ</span>
+    <span class="header-sub">кг / м²</span>
+  </div>
+
+  <div class="params-wrap">
+    <div>
+      <div class="param-label">Пол</div>
+      <div class="gender-toggle">
+        <button class="gender-btn on-m" id="btn-m" onclick="setGender('m')">♂ Мужчина</button>
+        <button class="gender-btn" id="btn-f" onclick="setGender('f')">♀ Женщина</button>
+      </div>
+    </div>
+    <div>
+      <div class="param-label">Возрастная группа</div>
+      <div class="age-pills" id="age-pills">
+        <button class="age-pill" onclick="setAge(0)">18–24</button>
+        <button class="age-pill active" onclick="setAge(1)">25–34</button>
+        <button class="age-pill" onclick="setAge(2)">35–44</button>
+        <button class="age-pill" onclick="setAge(3)">45–54</button>
+        <button class="age-pill" onclick="setAge(4)">55–64</button>
+        <button class="age-pill" onclick="setAge(5)">65+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fields">
+    <div class="field">
+      <div class="field-label"><span>Рост</span><span class="field-unit">см</span></div>
+      <input class="field-input" id="height" type="number" min="50" max="250" step="1" placeholder="175"/>
+    </div>
+    <div class="field">
+      <div class="field-label"><span>Вес</span><span class="field-unit">кг</span></div>
+      <input class="field-input" id="weight" type="number" min="1" max="500" step="0.1" placeholder="75"/>
+    </div>
+  </div>
+
+  <div class="err-msg" id="err">Введите корректные значения</div>
+
+  <div class="btn-wrap">
+    <button class="btn" id="btn" onclick="calculate()">Рассчитать</button>
+  </div>
+
+  <div class="result" id="result">
+    <div class="result-inner">
+
+      <div class="context-badge" id="ctx-badge">♂ · 25–34</div>
+
+      <div class="bmi-row">
+        <span class="bmi-label">Индекс массы тела</span>
+        <span class="bmi-value" id="out-bmi">—</span>
+        <span class="bmi-category" id="out-cat">—</span>
+        <span class="bmi-note" id="out-note"></span>
+      </div>
+
+      <div class="scale">
+        <div class="scale-bar">
+          <div class="scale-bar-fill" id="bar-fill"></div>
+          <div class="scale-marker" id="bar-marker"></div>
+        </div>
+        <div class="scale-ticks" id="scale-ticks">
+          <span>16</span><span></span><span></span><span></span><span>40</span>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-cell">
+          <span class="stat-cell-label">Норма веса для вас</span>
+          <span class="stat-cell-value" id="out-ideal">—</span>
+          <span class="stat-cell-sub" id="out-ideal-sub">кг</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-cell-label">Отклонение</span>
+          <span class="stat-cell-value" id="out-diff">—</span>
+          <span class="stat-cell-sub" id="out-diff-sub">от середины нормы</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-cell-label">Норма ИМТ</span>
+          <span class="stat-cell-value" id="out-bmi-range">—</span>
+          <span class="stat-cell-sub" id="out-bmi-range-sub">для вашей группы</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-cell-label">До нормы</span>
+          <span class="stat-cell-value" id="out-to-norm">—</span>
+          <span class="stat-cell-sub" id="out-to-norm-sub">кг</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="ranges" id="ranges-list"></div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// Нормы ИМТ по полу и возрасту
+// Источник: ВОЗ + возрастные поправки (у пожилых норма сдвигается выше)
+const NORMS = {
+  m: [
+    { label: '18–24', under: 18.5, normMax: 24.9, overMax: 29.9 },
+    { label: '25–34', under: 18.5, normMax: 25.0, overMax: 29.9 },
+    { label: '35–44', under: 18.5, normMax: 26.0, overMax: 30.9 },
+    { label: '45–54', under: 19.0, normMax: 27.0, overMax: 31.9 },
+    { label: '55–64', under: 19.5, normMax: 27.9, overMax: 32.9 },
+    { label: '65+',   under: 20.0, normMax: 29.9, overMax: 34.9 },
+  ],
+  f: [
+    { label: '18–24', under: 17.5, normMax: 23.9, overMax: 28.9 },
+    { label: '25–34', under: 18.0, normMax: 24.0, overMax: 29.9 },
+    { label: '35–44', under: 18.5, normMax: 25.0, overMax: 30.9 },
+    { label: '45–54', under: 19.0, normMax: 26.0, overMax: 31.9 },
+    { label: '55–64', under: 19.5, normMax: 27.0, overMax: 32.9 },
+    { label: '65+',   under: 20.0, normMax: 29.0, overMax: 34.9 },
+  ],
+};
+
+let gender = 'm', ageIdx = 1;
+
+function setGender(g) {
+  gender = g;
+  document.getElementById('btn-m').className = 'gender-btn' + (g === 'm' ? ' on-m' : '');
+  document.getElementById('btn-f').className = 'gender-btn' + (g === 'f' ? ' on-f' : '');
+  if (document.getElementById('result').classList.contains('show')) calculate();
+}
+
+function setAge(i) {
+  ageIdx = i;
+  document.querySelectorAll('.age-pill').forEach((p, idx) => p.classList.toggle('active', idx === i));
+  if (document.getElementById('result').classList.contains('show')) calculate();
+}
+
+function bmiToPercent(bmi, lo, hi) {
+  // scale 16–40 fixed
+  return Math.min(100, Math.max(0, (bmi - 16) / (40 - 16) * 100));
+}
+
+function wRange(hCm, bmiLo, bmiHi) {
+  const m = hCm / 100;
+  return { lo: (bmiLo * m * m).toFixed(1), hi: (bmiHi * m * m).toFixed(1) };
+}
+
+function calculate() {
+  const hEl = document.getElementById('height');
+  const wEl = document.getElementById('weight');
+  const errEl = document.getElementById('err');
+  const btn = document.getElementById('btn');
+
+  const h = parseFloat(hEl.value);
+  const w = parseFloat(wEl.value);
+
+  hEl.classList.remove('error'); wEl.classList.remove('error');
+  errEl.classList.remove('show');
+
+  let valid = true;
+  if (!h || h < 50 || h > 250) { hEl.classList.add('error'); valid = false; }
+  if (!w || w < 1  || w > 500) { wEl.classList.add('error'); valid = false; }
+  if (!valid) { errEl.classList.add('show'); return; }
+
+  const n = NORMS[gender][ageIdx];
+  const bmi = w / Math.pow(h / 100, 2);
+
+  // determine category
+  let cat;
+  if      (bmi < n.under)   cat = { id: 'under', label: 'Недостаточный вес', color: '#60b4f0', note: 'Ниже нормы для вашей группы' };
+  else if (bmi < n.normMax) cat = { id: 'norm',  label: 'Норма',             color: '#c8f060', note: 'Оптимальный диапазон' };
+  else if (bmi < n.overMax) cat = { id: 'over',  label: 'Избыточный вес',    color: '#f0a060', note: 'Выше нормы для вашей группы' };
+  else                       cat = { id: 'obese', label: 'Ожирение',          color: '#ff5f5f', note: 'Требует внимания' };
+
+  const pct = bmiToPercent(bmi);
+  const midBmi = (n.under + n.normMax) / 2;
+  const midW = midBmi * (h / 100) * (h / 100);
+  const diff = w - midW;
+  const diffStr = (diff >= 0 ? '+' : '') + diff.toFixed(1);
+
+  const ideal = wRange(h, n.under, n.normMax);
+
+  // to-norm calculation
+  let toNorm = '';
+  let toNormSub = '';
+  if (cat.id === 'norm') {
+    toNorm = '✓ В норме';
+    toNormSub = 'всё отлично';
+  } else if (cat.id === 'under') {
+    const need = (n.under * (h/100) * (h/100)) - w;
+    toNorm = '+' + need.toFixed(1);
+    toNormSub = 'кг до нормы';
+  } else {
+    const need = w - (n.normMax * (h/100) * (h/100));
+    toNorm = '−' + need.toFixed(1);
+    toNormSub = 'кг до нормы';
+  }
+
+  // context badge
+  const gLabel = gender === 'm' ? '♂' : '♀';
+  document.getElementById('ctx-badge').textContent = gLabel + ' · ' + n.label;
+
+  // bmi
+  document.getElementById('out-bmi').textContent = bmi.toFixed(1);
+  document.getElementById('out-bmi').style.color = cat.color;
+  document.getElementById('out-cat').textContent = cat.label;
+  document.getElementById('out-cat').style.color = cat.color;
+  document.getElementById('out-note').textContent = cat.note;
+
+  // scale
+  document.getElementById('bar-fill').style.width = pct + '%';
+  document.getElementById('bar-fill').style.background = cat.color;
+  document.getElementById('bar-marker').style.left = pct + '%';
+  document.getElementById('bar-marker').style.background = cat.color;
+
+  // ticks with actual norm boundaries
+  const t = document.getElementById('scale-ticks');
+  const normLoPct = bmiToPercent(n.under).toFixed(0) + '%';
+  const normHiPct = bmiToPercent(n.normMax).toFixed(0) + '%';
+  t.innerHTML = '<span>16</span><span>' + n.under + '</span><span>' + n.normMax + '</span><span>' + n.overMax + '</span><span>40</span>';
+
+  // stats
+  document.getElementById('out-ideal').textContent = ideal.lo + '–' + ideal.hi;
+  document.getElementById('out-ideal').style.color = cat.color;
+  document.getElementById('out-ideal-sub').textContent = 'кг · норма для ' + (gender === 'm' ? 'мужчин' : 'женщин') + ' ' + n.label;
+
+  document.getElementById('out-diff').textContent = diffStr + ' кг';
+  document.getElementById('out-diff').style.color = Math.abs(diff) < 1.5 ? '#c8f060' : cat.color;
+  document.getElementById('out-diff-sub').textContent = 'от середины нормы (' + midW.toFixed(1) + ' кг)';
+
+  document.getElementById('out-bmi-range').textContent = n.under + ' – ' + n.normMax;
+  document.getElementById('out-bmi-range-sub').textContent = 'норма ИМТ · ' + n.label;
+
+  document.getElementById('out-to-norm').textContent = toNorm;
+  document.getElementById('out-to-norm').style.color = cat.color;
+  document.getElementById('out-to-norm-sub').textContent = toNormSub;
+
+  // ranges legend
+  const rangesData = [
+    { id: 'under', dot: '#60b4f0', name: 'Недостаточный вес', range: '< ' + wRange(h, 10, n.under).hi + ' кг  ·  ИМТ < ' + n.under },
+    { id: 'norm',  dot: '#c8f060', name: 'Норма',             range: ideal.lo + '–' + ideal.hi + ' кг  ·  ИМТ ' + n.under + '–' + n.normMax },
+    { id: 'over',  dot: '#f0a060', name: 'Избыточный вес',    range: wRange(h, n.normMax, n.overMax).lo + '–' + wRange(h, n.normMax, n.overMax).hi + ' кг  ·  ИМТ ' + n.normMax + '–' + n.overMax },
+    { id: 'obese', dot: '#ff5f5f', name: 'Ожирение',          range: '> ' + wRange(h, n.overMax, 60).lo + ' кг  ·  ИМТ ≥ ' + n.overMax },
+  ];
+
+  const list = document.getElementById('ranges-list');
+  list.innerHTML = rangesData.map(r => `
+    <div class="range-row ${r.id === cat.id ? 'active' : ''}">
+      <div class="range-left">
+        <div class="range-dot" style="background:${r.dot}"></div>
+        ${r.name}
+      </div>
+      <span class="range-val">${r.range}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('result').classList.add('show');
+  btn.classList.remove('flash'); void btn.offsetWidth; btn.classList.add('flash');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+</script>
+</body>
+</html>
